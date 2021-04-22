@@ -1068,6 +1068,13 @@ class DatasetFile(Dataset):
         self._hash_info = {}
         self._read_hashes()
 
+    @property
+    def name(self):
+        base, ext, fs_options = vaex.file.split_ext(self.path)
+        base = os.path.basename(base)
+        return base
+
+
     def _create_columns(self):
         pass
 
