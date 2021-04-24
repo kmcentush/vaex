@@ -264,6 +264,11 @@ class Dataset(collections.abc.Mapping):
     def _create_columns(self):
         pass
 
+    @property
+    def name(self):
+        # TODO: in the future, we might want to use self.fingerprint or self.id
+        return "no-name"
+
     def __getstate__(self):
         state = self.__dict__.copy()
         del state['_columns']
