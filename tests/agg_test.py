@@ -513,7 +513,10 @@ def test_agg_count_with_custom_name():
 
 def test_minmax_ts(df):
     import pandas as pd
-    test_df = vaex.from_arrays(x=np.array(pd.date_range('2021/01/01 08:00', periods=5, freq='100ms')))
+    vals = pd.date_range('2021/01/01 08:00', periods=5, freq='100ms')
+    test_df = vaex.from_arrays(x=np.array(vals))
     vmin, vmax = test_df.minmax(test_df.x)
+    assert vmin == vals[0]
+    assert vmax == vals[-1]
     assert test_df.min(test_df.x) == vmin
     assert test_df.max(test_df.x) == vmax
