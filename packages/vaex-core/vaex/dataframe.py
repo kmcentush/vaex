@@ -1253,9 +1253,28 @@ class DataFrame(object):
         :param edges: {edges}
         :return: {return_stat_scalar}, the last dimension is of shape (2)
         """
-        vmin = self._compute_agg('min', expression, binby, limits, shape, selection, delay, edges, progress)
-        vmax = self._compute_agg('max', expression, binby, limits, shape, selection, delay, edges, progress)
-        return [vmin, vmax]
+        @delayed
+        def finish(*minmax_list):
+            value = vaex.utils.unlistify(waslist, np.array(minmax_list))
+            value = vaex.array_types.to_numpy(value)
+            value = value.astype(data_type0.numpy)
+            return value
+        expression = _ensure_strings_from_expressions(expression)
+        binby = _ensure_strings_from_expressions(binby)
+        waslist, [expressions, ] = vaex.utils.listify(expression)
+        column_names = self.get_column_names(hidden=True)
+        expressions = [vaex.utils.valid_expression(column_names, k) for k in expressions]
+        data_types = [self.data_type(expr) for expr in expressions]
+        data_type0 = data_types[0]
+        # special case that we supported mixed endianness for ndarrays
+        all_same_kind = all(isinstance(data_type.internal, np.dtype) for data_type in data_types) and all([k.kind == data_type0.kind for k in data_types])
+        if not (all_same_kind or all([k == data_type0 for k in data_types])):
+            raise TypeError("cannot mix different dtypes in 1 minmax call")
+        all_tasks = [[self._compute_agg('min', expression, binby, limits, shape, selection, delay, edges, progress),
+                      self._compute_agg('max', expression, binby, limits, shape, selection, delay, edges, progress)
+                      ] for expression in expressions]
+        result = finish(*all_tasks)
+        return self._delay(delay, result)
 
     @docsubst
     @stat_1d
